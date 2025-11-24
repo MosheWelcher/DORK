@@ -187,9 +187,19 @@ function checkRestrictedUser(post, config) {
     
     db[groupId][senderId].strikes += 1;
     var currentStrikes = db[groupId][senderId].strikes;
+    var userName = db[groupId][senderId].name || "User";
+
+    // Prepare Mention Attachment
+    // Text will be: "@Name MESSAGE..."
+    var mentionText = "@" + userName + " ";
+    var attachments = [{
+      "type": "mentions",
+      "user_ids": [senderId],
+      "loci": [[0, mentionText.length - 1]] // Loci is [start, length]
+    }];
 
     if (currentStrikes >= MAX_STRIKES) {
-      postMessage("Violation limit reached (" + currentStrikes + "/" + MAX_STRIKES + "). Removing user...", config.botId);
+      postMessage(mentionText + "Violation limit reached (" + currentStrikes + "/" + MAX_STRIKES + "). Removing user...", config.botId, attachments);
       
       var membershipId = getMembershipId(post.group_id, senderId, config.accessToken);
       
@@ -203,7 +213,7 @@ function checkRestrictedUser(post, config) {
         delete db[groupId][senderId];
       }
     } else {
-      postMessage("SILENCE VIOLATION! You are restricted from speaking. Strike " + currentStrikes + "/" + MAX_STRIKES + ".", config.botId);
+      postMessage(mentionText + "SILENCE VIOLATION! You are restricted from speaking. Strike " + currentStrikes + "/" + MAX_STRIKES + ".", config.botId, attachments);
     }
     
     saveDatabase(db);
@@ -235,10 +245,14 @@ function saveDatabase(data) {
 // API HELPER FUNCTIONS
 // ==========================================
 
-function postMessage(text, botId) {
+/**
+ * Updated to accept attachments (for mentions)
+ */
+function postMessage(text, botId, attachments) {
   var payload = {
     "bot_id": botId,
-    "text": text
+    "text": text,
+    "attachments": attachments || [] // Default to empty array if undefined
   };
   
   var options = {
