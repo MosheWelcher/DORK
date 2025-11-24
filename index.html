@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+      body { 
+        font-family: 'Inter', sans-serif; 
+        background-color: #f5f7fa; 
+        margin: 0; 
+        padding: 40px 20px;
+        color: #333;
+        display: flex;
+        justify-content: center;
+      }
+      .container { 
+        background: white; 
+        padding: 40px; 
+        border-radius: 12px; 
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+        width: 100%;
+        max-width: 650px; 
+      }
+      
+      header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+      h1 { margin: 0 0 10px 0; color: #1a1a1a; font-size: 28px; }
+      .subtitle { color: #666; font-size: 14px; }
+
+      /* Controls */
+      label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; }
+      select { 
+        width: 100%; 
+        padding: 12px; 
+        margin-bottom: 20px; 
+        border: 1px solid #ddd; 
+        border-radius: 6px; 
+        font-size: 16px; 
+        background-color: #fff;
+        font-family: 'Inter', sans-serif;
+      }
+      select:disabled { background-color: #f9f9f9; color: #999; }
+
+      button { 
+        width: 100%; 
+        padding: 14px; 
+        background-color: #1a1a1a; 
+        color: white; 
+        border: none; 
+        border-radius: 6px; 
+        cursor: pointer; 
+        font-size: 16px; 
+        font-weight: 600; 
+        transition: opacity 0.2s;
+      }
+      button:disabled { background-color: #ccc; cursor: not-allowed; }
+      button:hover:not(:disabled) { opacity: 0.9; }
+
+      /* Status Log */
+      .log-container { margin-top: 30px; }
+      .log-header { font-size: 12px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 600; }
+      .status-box { 
+        background: #1e1e1e; 
+        color: #a9a9a9; 
+        font-family: 'JetBrains Mono', monospace; 
+        padding: 20px; 
+        border-radius: 8px; 
+        height: 180px; 
+        overflow-y: auto;
+        font-size: 13px;
+        line-height: 1.5;
+        border: 1px solid #333;
+      }
+      
+      .status-line { margin-bottom: 4px; display: flex; }
+      .status-line::before { content: "›"; margin-right: 10px; color: #555; }
+      .success { color: #4cd964; }
+      .error { color: #ff3b30; }
+      .pending { color: #ffcc00; }
+      .info { color: #5ac8fa; }
+
+      .hidden { display: none; }
+      #final-success { 
+        margin-top: 25px; 
+        background-color: #e8f5e9; 
+        color: #2e7d32; 
+        padding: 15px; 
+        border-radius: 6px; 
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid #c8e6c9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>DORK Setup</h1>
+        <div class="subtitle">Select a group below to deploy DORK.</div>
+      </header>
+      
+      <!-- STEP 1 UI -->
+      <div id="group-selection-ui">
+        <label for="group-select">Available Groups</label>
+        <select id="group-select" disabled>
+          <option>Loading your groups...</option>
+        </select>
+        
+        <button id="btn-select-group" onclick="confirmGroupSelection()" disabled>Deploy DORK to Group</button>
+      </div>
+      
+      <!-- SUCCESS MESSAGE -->
+      <div id="final-success" class="hidden">
+        Deployment Complete! You may close this window.
+      </div>
+
+      <!-- LOGS -->
+      <div class="log-container">
+        <div class="log-header">Installation Log</div>
+        <div id="status-log" class="status-box">
+          <div class="status-line pending">Initializing system...</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var ACCESS_TOKEN = "<?= token ?>";
+      var GLOBAL_GROUP_ID = null;
+      var GLOBAL_BOT_ID = null;
+
+      function log(msg, type) {
+        var logBox = document.getElementById('status-log');
+        var div = document.createElement('div');
+        div.className = "status-line " + (type || "");
+        div.innerText = msg;
+        logBox.appendChild(div);
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+
+      function loadGroups() {
+        log("Authenticating and fetching groups...", "info");
+        google.script.run
+          .withSuccessHandler(onGroupsLoaded)
+          .withFailureHandler(onError)
+          .getEligibleGroups(ACCESS_TOKEN);
+      }
+
+      function onGroupsLoaded(groups) {
+        var select = document.getElementById('group-select');
+        var btn = document.getElementById('btn-select-group');
+        
+        select.innerHTML = "";
+        
+        if (groups.length === 0) {
+          var opt = document.createElement('option');
+          opt.text = "No eligible groups (Owner/Admin) found.";
+          select.add(opt);
+          log("Error: No eligible groups found.", "error");
+          return;
+        }
+
+        groups.forEach(function(g) {
+          var opt = document.createElement('option');
+          opt.value = g.id;
+          opt.text = g.name + " (" + g.role + ")";
+          select.add(opt);
+        });
+
+        select.disabled = false;
+        btn.disabled = false;
+        log("Groups loaded successfully.", "success");
+      }
+
+      function confirmGroupSelection() {
+        var select = document.getElementById('group-select');
+        GLOBAL_GROUP_ID = select.value;
+        var groupName = select.options[select.selectedIndex].text;
+
+        if (!GLOBAL_GROUP_ID) return;
+
+        select.disabled = true;
+        document.getElementById('btn-select-group').disabled = true;
+
+        log("Selected Target: " + groupName, "info");
+        startBotCreation();
+      }
+
+      function startBotCreation() {
+        log("Registering DORK instance...", "pending");
+        google.script.run
+          .withSuccessHandler(onBotCreated)
+          .withFailureHandler(onError)
+          .createBot(ACCESS_TOKEN, GLOBAL_GROUP_ID);
+      }
+
+      function onBotCreated(botId) {
+        GLOBAL_BOT_ID = botId;
+        log("Bot Registered. ID: " + botId, "success");
+        
+        log("Saving configuration...", "pending");
+        // Passing GLOBAL_GROUP_ID as third parameter for multi-group support
+        google.script.run
+          .withSuccessHandler(onConfigSaved)
+          .withFailureHandler(onError)
+          .saveConfiguration(ACCESS_TOKEN, GLOBAL_BOT_ID, GLOBAL_GROUP_ID);
+      }
+
+      function onConfigSaved() {
+        log("Configuration saved to Script Properties.", "success");
+        log("DEPLOYMENT SUCCESSFUL.", "success");
+        document.getElementById('final-success').classList.remove('hidden');
+        document.getElementById('group-selection-ui').style.opacity = '0.5';
+      }
+
+      function onError(err) {
+        log("FATAL ERROR: " + err, "error");
+        if (GLOBAL_GROUP_ID && !GLOBAL_BOT_ID) {
+           document.getElementById('btn-select-group').disabled = false;
+           document.getElementById('group-select').disabled = false;
+        }
+      }
+
+      window.onload = loadGroups;
+    </script>
+  </body>
+</html>
