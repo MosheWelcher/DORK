@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+      body { 
+        font-family: 'Inter', sans-serif; 
+        background-color: #f5f7fa; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        height: 100vh; 
+        margin: 0; 
+        color: #333;
+      }
+      .card { 
+        background: white; 
+        padding: 40px; 
+        border-radius: 12px; 
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
+        width: 100%; 
+        max-width: 400px; 
+        text-align: center; 
+      }
+      h1 { margin-top: 0; color: #1a1a1a; font-size: 24px; }
+      p { color: #666; margin-bottom: 30px; line-height: 1.5; }
+      
+      .btn {
+        display: block;
+        width: 100%;
+        padding: 12px 0;
+        margin-bottom: 15px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background-color 0.2s;
+        box-sizing: border-box;
+        cursor: pointer;
+        border: none;
+        font-size: 16px;
+      }
+      
+      .btn-primary {
+        background-color: #00AFF0; /* GroupMe Blue */
+        color: white;
+      }
+      .btn-primary:hover { background-color: #008ebf; }
+      
+      .btn-outline {
+        background-color: transparent;
+        border: 2px solid #00AFF0;
+        color: #00AFF0;
+      }
+      .btn-outline:hover { background-color: #e6f7fd; }
+
+      .divider {
+        margin: 20px 0;
+        font-size: 12px;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Welcome to DORK</h1>
+      <p>To configure DORK for your groups, you need to authorize this application to access your GroupMe account.</p>
+      
+      <!-- OAuth Link injected from Setup.gs -->
+      <a href="<?= oauthUrl ?>" class="btn btn-primary">Authorize with GroupMe</a>
+      
+      <div class="divider">New to GroupMe?</div>
+      
+      <a href="https://web.groupme.com/signup" target="_blank" class="btn btn-outline">Create an Account</a>
+    </div>
+  </body>
+</html>
