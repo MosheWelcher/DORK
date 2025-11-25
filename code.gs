@@ -167,7 +167,7 @@ function handleCommands(post, commandText, groupId, config) {
     if (db[groupId] && db[groupId][targetUserId]) {
       delete db[groupId][targetUserId];
       saveDatabase(db);
-      postMessage("User unsilenced. They may speak freely.", config.botId);
+      postMessage(targetName + " unsilenced. They may speak freely.", config.botId);
     } else {
       postMessage("That user was not silenced in this group.", config.botId);
     }
